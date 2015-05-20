@@ -57,7 +57,9 @@ function generateUniqueIntegerList(maxValue, numValues) {
 }
 
 function updateIterationCount() {
-    iterationCount = parseInt(document.getElementById("iterationCount").value);
+    var iterationCountElement = document.getElementById("iterationCount");
+    if (iterationCountElement)
+        iterationCount = parseInt(iterationCountElement.value);
 }
 
 /* Functions for modifying the displayed array in various ways */

@@ -3,6 +3,7 @@ var globalScope;
 angular.module('fasterAngular', []).controller('mycontroller', ['$scope', function($scope) {
     $scope.dataLines = dataLines;
     updateRowCount();
+    updateIterationCount();
     globalScope = $scope;
 }]).filter('unsafe', function ($sce) { return $sce.trustAsHtml; });
 
