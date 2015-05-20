@@ -83,7 +83,7 @@ function updateElements(percentOfElements) {
     elementsToChange.forEach(function (elementNumber) {
         row = dataLines[Math.floor(elementNumber/ITEMS_PER_ROW)];
         do {
-            newWord = words[Math.floor(Math.random() * words.length)];
+            newWord = words[Math.floor(Math.random() * words.length)] + ' ';
         } while (row.indexOf(newWord) >= 0); /* Be sure to maintain uniqueness */
         row[elementNumber % ITEMS_PER_ROW] = newWord;
     });
