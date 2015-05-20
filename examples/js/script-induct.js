@@ -15,7 +15,7 @@ var insrtPt = document.getElementById("insertPoint");
 var tmpl = compile(markup);
 var time = new Date().getTime();
 tmpl = render(tmpl, {dataLines: dataLines}, insrtPt);
-console.log('Initial render with custom took ' + (new Date().getTime() - time) + ' ms');
+displayMessage('Initial rendering took ' + (new Date().getTime() - time) + ' ms');
 
 rerender = function() {
     render(tmpl, {dataLines: dataLines});

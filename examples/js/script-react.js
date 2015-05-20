@@ -31,7 +31,7 @@ var insrtPt = document.getElementById("insertPoint");
 var start = new Date().getTime();
 var reactComponent = React.createElement(ListComponent, {dataLines: dataLines});
 React.render(reactComponent, insrtPt);
-console.log('React took ' + (new Date().getTime() - start) + 'ms');
+displayMessage('Initial rendering took ' + (new Date().getTime() - start) + 'ms');
 
 rerender = function() {
     React.render(reactComponent, insrtPt);

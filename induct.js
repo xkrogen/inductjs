@@ -2,58 +2,10 @@
  *
  * The purpose of this library is to provide incremental, and thus fast, updating of dynamic displayed content.
  *
- * The content you want to display is represented by templates, which are defined by a markup string that
- * contains a mix of HTML and dynamic content. This content can come from the global scope, or from a local
- * context, which you can access from within expressions using context.var_name. Contexts are passed in through
- * the render() function. You must first compile a markup string into a template using compile(markup), then
- * you can render this template into the DOM using render(template, context, insertPoint), where insertPoint
- * is a reference to a node in the DOM tree where you would like this template to be displayed.
- *
- * There are four types of template sites: html, text, if, and for. Html, which is the default
- * if no template type is specified, simply evaluates the given Javascript expression and outputs it as raw HTML.
- * Text is similar, but can only be used for text - any HTML characters will appear as-is rather than being rendered,
- * but it can be much faster at updating and this template should be used whenever you don't need to output HTML
- * content. If templates will allow you to hide or show content conditionally - their expression should return a
- * boolean value which, if true, will allow the content within to be displayed. For templates allow you to repeat
- * content an arbitrary number of times, each with a slightly different context. Their expression should return a
- * list/array, and for each element of that list, one copy of the contained content will be displayed. Each copy
- * will have the same context as the for template, with the addition of the for-variable having the value of the
- * corresponding list item.
- *
- * Html: {{content-expression}}
- * Text: {{text content-expression}}
- * If: {{if boolean-expression}} inner-content {{/if}}
- * For: {{for(for-variable) list-expression}} inner-content-to-be-repeated {{/for}}
- *
- * For all of these template sites except for, they will be wrapped in an individual HTML element. For templates
- * will have each copy of their output wrapped in an individual HTML element. To define what type of element is
- * used for wrapping, place an HTML tag name between the first set of curly braces. The default is a span tag.
- * For example, to display a table, we might use a markup string like:
- *
- * <table>
- * {tr{for(row) context.rows}}
- * <td>Row:</td>
- * {td{text context.row.content}}
- * {td{if context.row.footer}} {{'<b>' + context.row.footer + '</b>'}} {{/if}}
- * {{/for}}
- * </table>
- *
- * Then to display this table inside of a div in our document with an ID of “insertPoint”, we would do:
- *
- * var template = compile(markup_string);
- * template = render(template, {rows: myArray}, document.getElementById(“insertPoint”);
- *
- * Where myArray is an array of objects such as {content: “Message”, footer: “ending”}.
- *
- * And, if myArray changed, to update the displayed content:
- *
- * render(template, {rows: myArray});
- *
- * Note that each element of the array used in a for template must be unique. You cannot have duplicate
- * strings / numeric values and you cannot use the same object reference twice. This is a limitation due
- * to the way the list optimizations are implemented. Allowing a separate array of keys to be used to track
- * elements, similar to what is done by ReactJS and optionally by AngularJS, may be implemented in the future.
+ * You can view usage and implementation details at ***
  */
+
+// TODO add link to the blog post above!!
 
 /* List of HTML tag types you can specify that a template site should be wrapped in */
 var allowedHtmlTags = ['div', 'span', 'ul', 'ol', 'p', 'table', 'tr', 'td', 'li',

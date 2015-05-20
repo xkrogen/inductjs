@@ -15,7 +15,7 @@ function getDataRow() {
         } while (usedWords.indexOf(newWord) >= 0);
         usedWords.push(newWord);
         if (USE_NESTED)
-            ret.push('<b>' + newWord + '</b>' + ' ');
+            ret.push(newWord + ' ');
         else
             ret += newWord + ' ';
     }
@@ -41,7 +41,7 @@ function updateRowCount() {
         rowCountElement.value = dataLines.length;
 }
 
-/* Generate unique list of interegers NUMVALUES long with
+/* Generate unique list of integers NUMVALUES long with
  * each value between 0 (inclusive) and MAXVALUE (exclusive) */
 function generateUniqueIntegerList(maxValue, numValues) {
     var newValue, list = [];
@@ -65,23 +65,32 @@ function insertRowInMiddle() {
     displayMessage('Inserting a row in the middle (with ' + dataLines.length + ' total rows) took ' + time + ' ms.');
 }
 
-function updateRows(useValues, percentOfRows) {
-    var time, newRow, numRows = percentOfRows/100*dataLines.length,
+function updateRows(percentOfRows) {
+    var time, numRows = percentOfRows/100*dataLines.length,
         rowsToChange = generateUniqueIntegerList(dataLines.length, numRows);
     rowsToChange.forEach(function (rowIndex) {
-       if (useValues) {
-           newRow = getDataRow();
-           for (var i = 0; i < newRow.length; i++) {
-               dataLines[rowIndex][i] = newRow[i];
-           }
-       } else {
-           dataLines[rowIndex] = getDataRow();
-       }
+        dataLines[rowIndex] = getDataRow();
     });
     time = -(new Date().getTime());
     rerender();
     time += new Date().getTime();
-    displayMessage('Changing ' + numRows + ' rows took ' + (useValues ? '(elements only) ': '') + time + ' ms.');
+    displayMessage('Changing ' + numRows + ' rows took ' + time + ' ms.');
+}
+
+function updateElements(percentOfElements) {
+    var time, newWord, row, numElements = percentOfElements/100*dataLines.length*ITEMS_PER_ROW,
+        elementsToChange = generateUniqueIntegerList(dataLines.length*ITEMS_PER_ROW, numElements);
+    elementsToChange.forEach(function (elementNumber) {
+        row = dataLines[Math.floor(elementNumber/ITEMS_PER_ROW)];
+        do {
+            newWord = words[Math.floor(Math.random() * words.length)];
+        } while (row.indexOf(newWord) >= 0); /* Be sure to maintain uniqueness */
+        row[elementNumber % ITEMS_PER_ROW] = newWord;
+    });
+    time = -(new Date().getTime());
+    rerender();
+    time += new Date().getTime();
+    displayMessage('Changing ' + numElements + ' elements took ' + time + ' ms.');
 }
 
 function addOrRemoveRows(nRows, insertAtEnd) {
