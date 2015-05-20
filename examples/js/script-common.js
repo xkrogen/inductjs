@@ -5,6 +5,8 @@ var ROW_DISPLAY_DEFAULT = USE_NESTED ? 300 : 1500,
 /* Words to choose from to display */
 var words = ['he', 'be', 'and', 'of', 'a', 'in', 'to', 'have', 'to','it', 'I','that', 'for','you', 'he', 'with','on', 'do','say', 'this', 'they', 'at', 'but', 'we', 'his', 'from', 'that', 'not', 'by', 'she', 'or','as','what','go','their','can','who','get','if', 'all','my','make','about','know','will','as','up','one','time','there','year','so','think','when','which','them','some','me','people','take','out','into','just','see','him','your','come','could','now','than','like','other','how','then','its','our','two','more','these','want','way','look','first','also','new', 'more','use','no','man','find','here','thing','give','many','well','only','those','tell','one','very','her','even','back','any','good','woman','through','us','life','child','there','work','down','may','after','should','call','world','over','school','still','try','in','as','last','ask','need','too','feel','three','when','state','never','become','between','high','really','something','most','another','much','family','own','out','leave','put','old','while', 'keep','student','why','let', 'great', 'same','big','group','begin','seem','country','help','talk','where','turn','problem','every','start','hand','might','American','show','part','about','against','place','over','such','again','few','case','most','week','company','where','system','each','right','program','hear','so','question','during','work','play','government','run','small','number','off','always','move','like','night','live','Mr','point','believe','hold','today','bring','happen','next','without','before','large','all','million','must','home','under','water','room','write','mother', 'area'];
 
+var iterationCount; /* Number of iterations to average over for performance measurements */
+
 /* Get a row of data to display (enforcing uniqueness for nested version) */
 function getDataRow() {
     var ret, usedWords = [], newWord;
@@ -28,6 +30,7 @@ for (var i = 0; i < ROW_DISPLAY_DEFAULT; i++) {
     dataLines.push(getDataRow());
 }
 updateRowCount();
+updateIterationCount();
 
 /* Writes message to output element and to console. */
 function displayMessage(msg) {
@@ -53,64 +56,93 @@ function generateUniqueIntegerList(maxValue, numValues) {
     return list;
 }
 
+function updateIterationCount() {
+    iterationCount = parseInt(document.getElementById("iterationCount").value);
+}
+
 /* Functions for modifying the displayed array in various ways */
 
 function insertRowInMiddle() {
-    var time;
-    dataLines.splice(Math.floor(dataLines.length / 2), 0, getDataRow());
-    time = -(new Date().getTime());
-    rerender();
-    time += new Date().getTime();
+    var start, time = 0;
+    for (var i = 0; i < iterationCount; i++) {
+        dataLines.splice(Math.floor(dataLines.length / 2), 0, getDataRow());
+        start = new Date().getTime();
+        rerender();
+        time += new Date().getTime() - start;
+        if (i !== iterationCount-1)
+            dataLines.splice(Math.floor(dataLines.length / 2), 1);
+    }
     updateRowCount();
-    displayMessage('Inserting a row in the middle (with ' + dataLines.length + ' total rows) took ' + time + ' ms.');
+    displayMessage('Inserting a row in the middle (with ' + dataLines.length + ' total rows) took ' + time/iterationCount + ' ms.');
 }
 
 function updateRows(percentOfRows) {
-    var time, numRows = percentOfRows/100*dataLines.length,
+    var start, time = 0, numRows = percentOfRows/100*dataLines.length, rowsToChange;
+
+    for (var i = 0; i < iterationCount; i++) {
         rowsToChange = generateUniqueIntegerList(dataLines.length, numRows);
-    rowsToChange.forEach(function (rowIndex) {
-        dataLines[rowIndex] = getDataRow();
-    });
-    time = -(new Date().getTime());
-    rerender();
-    time += new Date().getTime();
-    displayMessage('Changing ' + numRows + ' rows took ' + time + ' ms.');
+        rowsToChange.forEach(function (rowIndex) {
+            dataLines[rowIndex] = getDataRow();
+        });
+        start = new Date().getTime();
+        rerender();
+        time += new Date().getTime() - start;
+    }
+    displayMessage('Changing ' + numRows + ' rows took ' + time/iterationCount + ' ms.');
 }
 
 function updateElements(percentOfElements) {
-    var time, newWord, row, numElements = percentOfElements/100*dataLines.length*ITEMS_PER_ROW,
-        elementsToChange = generateUniqueIntegerList(dataLines.length*ITEMS_PER_ROW, numElements);
-    elementsToChange.forEach(function (elementNumber) {
-        row = dataLines[Math.floor(elementNumber/ITEMS_PER_ROW)];
-        do {
-            newWord = words[Math.floor(Math.random() * words.length)] + ' ';
-        } while (row.indexOf(newWord) >= 0); /* Be sure to maintain uniqueness */
-        row[elementNumber % ITEMS_PER_ROW] = newWord;
-    });
-    time = -(new Date().getTime());
-    rerender();
-    time += new Date().getTime();
-    displayMessage('Changing ' + numElements + ' elements took ' + time + ' ms.');
+    var start, time = 0, newWord, row, elementsToChange,
+        numElements = percentOfElements/100*dataLines.length*ITEMS_PER_ROW;
+    for (var i = 0; i < iterationCount; i++) {
+        elementsToChange = generateUniqueIntegerList(dataLines.length * ITEMS_PER_ROW, numElements);
+        elementsToChange.forEach(function (elementNumber) {
+            row = dataLines[Math.floor(elementNumber / ITEMS_PER_ROW)];
+            do {
+                newWord = words[Math.floor(Math.random() * words.length)] + ' ';
+            } while (row.indexOf(newWord) >= 0);
+            /* Be sure to maintain uniqueness */
+            row[elementNumber % ITEMS_PER_ROW] = newWord;
+        });
+        start = new Date().getTime();
+        rerender();
+        time += new Date().getTime() - start;
+    }
+    displayMessage('Changing ' + numElements + ' elements took ' + time/iterationCount + ' ms.');
 }
 
 function addOrRemoveRows(nRows, insertAtEnd) {
-    var time, numRows = nRows * ROW_ADDITION_INCREMENT;
-    if (numRows > 0) {
-        for (var i = 0; i < numRows; i++)
-            if (insertAtEnd) {
-                dataLines.push(getDataRow());
+    var start, time = 0, numRows = nRows * ROW_ADDITION_INCREMENT;
+    for (var i = 0; i < iterationCount; i++) {
+        if (numRows > 0) {
+            for (var j = 0; j < numRows; j++)
+                if (insertAtEnd) {
+                    dataLines.push(getDataRow());
+                } else {
+                    dataLines.splice(0, 0, getDataRow());
+                }
+        } else {
+            dataLines.splice(insertAtEnd ? dataLines.length + numRows : 0, Math.abs(numRows));
+        }
+        start = new Date().getTime();
+        rerender();
+        time += (new Date().getTime()) - start;
+        if (i !== iterationCount-1) {
+            if (numRows < 0) {
+                for (j = 0; j < Math.abs(numRows); j++)
+                    if (insertAtEnd) {
+                        dataLines.push(getDataRow());
+                    } else {
+                        dataLines.splice(0, 0, getDataRow());
+                    }
             } else {
-                dataLines.splice(0, 0, getDataRow());
+                dataLines.splice(insertAtEnd ? dataLines.length - numRows : 0, numRows);
             }
-    } else {
-        dataLines.splice(insertAtEnd ? dataLines.length + numRows : 0, Math.abs(numRows));
+        }
     }
-    time = -(new Date().getTime());
-    rerender();
-    time += (new Date().getTime());
     updateRowCount();
     displayMessage(((numRows < 0) ? "Deleting " : "Adding ") + Math.abs(numRows) + ' rows at the ' + (insertAtEnd ? "end" : "start") +
-    ' (with ' + dataLines.length + ' total rows) took ' + time + ' ms.');
+    ' (with ' + dataLines.length + ' total rows) took ' + time/iterationCount + ' ms.');
 }
 
 function changeRowCount() {
@@ -125,19 +157,24 @@ function changeRowCount() {
 }
 
 function changeRowInMiddle() {
-    var time;
-    dataLines[Math.floor(dataLines.length/2)] = getDataRow();
-    time = -(new Date().getTime());
-    rerender();
-    time += (new Date().getTime());
-    displayMessage('Changing one row in the middle (with ' + dataLines.length + ' total rows) took ' + time + ' ms.');
+    var start, time = 0;
+    for (var i = 0; i < iterationCount; i++) {
+        dataLines[Math.floor(dataLines.length / 2)] = getDataRow();
+        start = new Date().getTime();
+        rerender();
+        time += (new Date().getTime()) - start;
+    }
+    displayMessage('Changing one row in the middle (with ' + dataLines.length + ' total rows) took ' + time/iterationCount + ' ms.');
 }
 
 function rerenderNoChange() {
-    var time = -(new Date().getTime());
-    rerender();
-    time += (new Date().getTime());
-    displayMessage('Rerendering with no actual changes (with ' + dataLines.length + ' total rows) took ' + time + ' ms.');
+    var start, time = 0;
+    for (var i = 0; i < iterationCount; i++) {
+        start = new Date().getTime();
+        rerender();
+        time += (new Date().getTime()) - start;
+    }
+    displayMessage('Rerendering with no actual changes (with ' + dataLines.length + ' total rows) took ' + time/iterationCount + ' ms.');
 }
 
 /* No longer used
