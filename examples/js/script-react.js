@@ -3,7 +3,11 @@ var RowComponent = React.createClass({displayName: "RowComponent",
         var keyID = 0;
         var spans = this.props.dataLine.map(function(datum) {
             keyID += 1;
-            return React.DOM.span({key: keyID}, datum);
+            if (USE_TEXT)
+                return React.DOM.span({key: keyID}, datum);
+            else
+                return React.DOM.span({key: keyID,
+                                   dangerouslySetInnerHTML: {__html: datum}});
         });
         return React.DOM.tr(null, React.DOM.td(null, spans));
     }

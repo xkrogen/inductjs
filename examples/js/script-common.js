@@ -5,6 +5,12 @@ var ROW_DISPLAY_DEFAULT = USE_NESTED ? 300 : 1500,
 /* Words to choose from to display */
 var words = ['he', 'be', 'and', 'of', 'a', 'in', 'to', 'have', 'to','it', 'I','that', 'for','you', 'he', 'with','on', 'do','say', 'this', 'they', 'at', 'but', 'we', 'his', 'from', 'that', 'not', 'by', 'she', 'or','as','what','go','their','can','who','get','if', 'all','my','make','about','know','will','as','up','one','time','there','year','so','think','when','which','them','some','me','people','take','out','into','just','see','him','your','come','could','now','than','like','other','how','then','its','our','two','more','these','want','way','look','first','also','new', 'more','use','no','man','find','here','thing','give','many','well','only','those','tell','one','very','her','even','back','any','good','woman','through','us','life','child','there','work','down','may','after','should','call','world','over','school','still','try','in','as','last','ask','need','too','feel','three','when','state','never','become','between','high','really','something','most','another','much','family','own','out','leave','put','old','while', 'keep','student','why','let', 'great', 'same','big','group','begin','seem','country','help','talk','where','turn','problem','every','start','hand','might','American','show','part','about','against','place','over','such','again','few','case','most','week','company','where','system','each','right','program','hear','so','question','during','work','play','government','run','small','number','off','always','move','like','night','live','Mr','point','believe','hold','today','bring','happen','next','without','before','large','all','million','must','home','under','water','room','write','mother', 'area'];
 
+if (!USE_TEXT) {
+    words = words.map(function (word, idx) {
+        return idx % 2 === 0 ? '<b>' + word + '</b>' : word;
+    })
+}
+
 var iterationCount; /* Number of iterations to average over for performance measurements */
 
 /* Get a row of data to display (enforcing uniqueness for nested version) */
