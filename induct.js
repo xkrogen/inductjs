@@ -19,13 +19,13 @@ var LIST_MATCH_TRAVERSE_FRACTION = 0.5, /* Fraction of the list to traverse look
     LIST_MATCH_SEQUENTIAL_LENGTH = 4;   /* Number of items in a row to be equal to consider it a match */
 
 /* Call on a template to render it. This will automatically render or rerender the template as necessary.
- * If you pass in an uninstantiated template (never previously rendered), you MUST specify an insertPt (a DOM element
- * at which to insert the template). You can do this multiple times at different insertPts. If you pass in an instantiated
- * template, the insertPt argument will be ignored. Always returns the instantiated template, which you should keep to
- * pass in to subsequent calls to render.
- * TEMPLATE: The template to be rendered. Can be as-of-yet unrendered (i.e. returned from compile()) or rendered
- *           (i.e. returned from a previous call to render()). Unrendered templates will not be modified (you must
- *           store the return from render) but rendered templates will be modified in place.
+ * If you pass in a template string or an uninstantiated template (never previously rendered), you MUST specify an insertPt
+ * (a DOM element at which to insert the template). You can do this multiple times at different insertPts. If you pass
+ * in an instantiated template, the insertPt argument will be ignored. Always returns the instantiated template, which
+ * you should keep to pass in to subsequent calls to render.
+ * TEMPLATE: The template to be rendered. Can be as-of-yet unrendered (i.e. a template stirng or a template returned from
+ *           compile()) or rendered (i.e. returned from a previous call to render()). Unrendered templates will not be
+ *           modified (you must store the return from render) but rendered templates will be modified in place.
  * CTX: The context to be used when rendering. Should be an object, whose fields you can access from within
  *      your template's markup by calling context.field.
  * INSERTPT: A reference to the DOM node at which to insert your template. You MUST specify this when passing in
@@ -33,10 +33,12 @@ var LIST_MATCH_TRAVERSE_FRACTION = 0.5, /* Fraction of the list to traverse look
  * RETURNS a rendered template.
  */
 function render(template, ctx, insertPt) {
-    if (!template || !(template instanceof Template)) {
-        console.log("ERROR: Must pass in a valid template.");
+    if (!template || (!(template instanceof Template) && !(template instanceof String || typeof template === 'string'))) {
+        console.log("ERROR: Must pass in a valid template or template string.");
         return;
     }
+    if (template instanceof String || typeof template === 'string')
+        template = compile(template);
     if (template.inst) {
         return incrementalRerender(template, ctx);
     } else {
@@ -49,8 +51,6 @@ function render(template, ctx, insertPt) {
         return renderWrapper.instTmpl;
     }
 }
-
-// TODO ERIK make render() accept an uncompiled string
 
 /* A template object. */
 function Template(type, expr, htmlTagType, tmplList, id) {

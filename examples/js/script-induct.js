@@ -12,9 +12,8 @@ if (USE_NESTED) {
 }
 var insrtPt = document.getElementById("insertPoint");
 
-var tmpl = compile(markup);
 var time = new Date().getTime();
-tmpl = render(tmpl, {dataLines: dataLines}, insrtPt);
+tmpl = render(markup, {dataLines: dataLines}, insrtPt);
 displayMessage('Initial rendering took ' + (new Date().getTime() - time) + ' ms');
 
 rerender = function() {
