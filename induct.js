@@ -11,7 +11,7 @@
 var allowedHtmlTags = ['div', 'span', 'ul', 'ol', 'p', 'table', 'tr', 'td', 'li',
     'a', 'b', 'blockquote', 'button', 'code', 'em', 'form', 'h1', 'h2', 'h3', 'h4',
     'h5', 'h6', 'img', 'pre', 'strong', 'th'];
-var rParse = new RegExp('\\{(' + allowedHtmlTags.join('|') + ')?\\{(html|if|text|for\\(([a-zA-Z][a-zA-Z0-9]*)\\)|\\/if|\\/for)?(.*?)}}', 'g');
+var rParse = new RegExp('\\{(' + allowedHtmlTags.join('|') + ')?\\{(html|if|text|for(\\*?)\\(([a-zA-Z][a-zA-Z0-9]*)\\)|\\/if|\\/for)?(.*?)}}', 'g');
 
 /* Parameters for list-matching optimizations */
 var LIST_MATCH_TRAVERSE_FRACTION = 0.5, /* Fraction of the list to traverse looking for matches */
@@ -73,7 +73,10 @@ function Template(type, expr, htmlTagType, tmplList, id) {
     this.instTmplList = [];
     /* List of (non-instantiated) subtemplates contained within */
     this.tmplList = tmplList === undefined ? [] : tmplList;
+
     /* For-template specific items below */
+    /* True if list optimizations should be applied to this for-template */
+    this.useOptimizations = undefined;
     /* Stores the name of the variable which will be filled with the array values */
     this.forvar = undefined;
     /* Stores the type of HTML node which will be repeated for each element of the array */
@@ -93,8 +96,6 @@ function Template(type, expr, htmlTagType, tmplList, id) {
     /* Boolean value for whether or not the comment nodes have been inserted into the DOM yet */
     this.hasCommentNodes = undefined;
 }
-
-// consider subclassing out the list optimizations with a visitor type pattern, then you can see the high level algorithm more easily
 
 Template.prototype = {
     constructor: Template,
@@ -116,6 +117,7 @@ Template.prototype = {
         if (this.type === 'for') {
             newTemplate.forvar = this.forvar;
             newTemplate.forNodeType = this.forNodeType;
+            newTemplate.useOptimizations = this.useOptimizations;
             newTemplate.forDomIds = forDomIds;
             newTemplate.forDomElements = [];
             newTemplate.forMap = forMap;
@@ -320,74 +322,194 @@ function incrementalRerender(template, ctx) {
                 return template;
             }
         case 'for':
+            var oldForCtxVal, value, i, innerWrapper, nextNode, nodeToDelete, textStrings,
+                instTmplLists = [], forDomIds = [], forDomElements = [], forMap = {};
             exprVal = evalInContext(template.expr, ctx);
+            if (this.useOptimizations) {
+                var startMatchPosOld, startMatchPosNew, endMatchPosOld, endMatchPosNew, newPos,
+                    start = 0, end = exprVal.length - 1,
+                    currMatchedPos = exprVal.length - 1, lastMatchedPos = -2;
+                /* Attempt to match the new and old lists from the beginning of the list. */
+                while (start < LIST_MATCH_TRAVERSE_FRACTION * exprVal.length && start < LIST_MATCH_MAX_CHECK) {
+                    if ((newPos = template.forMap[getKey(exprVal[start])]) === undefined) {
+                        lastMatchedPos = -2;
+                    } else if (newPos === lastMatchedPos + 1) {
+                        /* Found multiple items in a row */
+                        if (newPos - currMatchedPos >= LIST_MATCH_SEQUENTIAL_LENGTH) {
+                            /* Found sufficient number of sequential matching items */
+                            startMatchPosOld = currMatchedPos;
+                            startMatchPosNew = start - LIST_MATCH_SEQUENTIAL_LENGTH;
+                            break;
+                        } else {
+                            lastMatchedPos = newPos;
+                        }
+                    } else {
+                        currMatchedPos = newPos;
+                        lastMatchedPos = newPos;
+                    }
+                    start++;
+                }
+                /* Repeat above from the end of the list, again attempting to match */
+                while (end > (exprVal.length * (1 - LIST_MATCH_TRAVERSE_FRACTION)) && end > (exprVal.length - LIST_MATCH_MAX_CHECK)) {
+                    if ((newPos = template.forMap[getKey(exprVal[end])]) === undefined) {
+                        lastMatchedPos = -2;
+                    } else if (newPos === lastMatchedPos - 1) {
+                        /* Found multiple items in a row */
+                        if (currMatchedPos - newPos >= LIST_MATCH_SEQUENTIAL_LENGTH) {
+                            /* Found sufficient number of sequential matching items */
+                            endMatchPosOld = currMatchedPos;
+                            endMatchPosNew = end + LIST_MATCH_SEQUENTIAL_LENGTH;
+                            break;
+                        } else {
+                            lastMatchedPos = newPos;
+                        }
+                    } else {
+                        currMatchedPos = newPos;
+                        lastMatchedPos = newPos;
+                    }
+                    end--;
+                }
+                var oldIdx, newIdx;
+                if (endMatchPosOld === undefined || startMatchPosOld === undefined
+                    || (endMatchPosOld - startMatchPosOld) !== (endMatchPosNew - startMatchPosNew)) {
+                    /* No match found, or the match isn't fully valid because the amount of content within the match
+                     * is inconsistent, but attempt to reuse existing content */
+                    oldForCtxVal = ctx[template.forvar];
+                    for (i = 0; i < exprVal.length && i < template.currentVal; i++) {
+                        value = exprVal[i];
 
-            var startMatchPosOld, startMatchPosNew, endMatchPosOld, endMatchPosNew;
-            var start = 0, end = exprVal.length - 1;
-            var currMatchedPos = exprVal.length - 1, lastMatchedPos = -2;
-            var newPos;
-            /* Attempt to match the new and old lists from the beginning of the list. */
-            while (start < LIST_MATCH_TRAVERSE_FRACTION*exprVal.length && start < LIST_MATCH_MAX_CHECK) {
-                if ((newPos = template.forMap[getKey(exprVal[start])]) === undefined) {
-                    lastMatchedPos = -2;
-                } else if (newPos === lastMatchedPos + 1) {
-                    /* Found multiple items in a row */
-                    if (newPos - currMatchedPos >= LIST_MATCH_SEQUENTIAL_LENGTH) {
-                        /* Found sufficient number of sequential matching items */
-                        startMatchPosOld = currMatchedPos;
-                        startMatchPosNew = start - LIST_MATCH_SEQUENTIAL_LENGTH;
-                        break;
-                    } else {
-                        lastMatchedPos = newPos;
+                        if (forMap[getKey(value)] !== undefined) {
+                            console.log('ERROR: Cannot have multiple values mapping to the same value in a for-loop!');
+                            continue;
+                        }
+                        forMap[getKey(value)] = i;
+                        forDomIds[i] = template.forDomIds[i];
+                        forDomElements[i] = template.forDomElements[i];
+
+                        instTmplLists[i] = template.instTmplList[i].map(function (innerTmpl) {
+                            ctx[template.forvar] = value;
+                            return incrementalRerender(innerTmpl, ctx);
+                        });
                     }
-                } else {
-                    currMatchedPos = newPos;
-                    lastMatchedPos = newPos;
-                }
-                start++;
-            }
-            /* Repeat above from the end of the list, again attempting to match */
-            while (end > (exprVal.length*(1 - LIST_MATCH_TRAVERSE_FRACTION)) && end > (exprVal.length - LIST_MATCH_MAX_CHECK)) {
-                if ((newPos = template.forMap[getKey(exprVal[end])]) === undefined) {
-                    lastMatchedPos = -2;
-                } else if (newPos === lastMatchedPos - 1) {
-                    /* Found multiple items in a row */
-                    if (currMatchedPos - newPos >= LIST_MATCH_SEQUENTIAL_LENGTH) {
-                        /* Found sufficient number of sequential matching items */
-                        endMatchPosOld = currMatchedPos;
-                        endMatchPosNew = end + LIST_MATCH_SEQUENTIAL_LENGTH;
-                        break;
-                    } else {
-                        lastMatchedPos = newPos;
+
+                    /* If length doesn't match, delete or insert as necessary */
+                    if (exprVal.length !== template.currentVal) {
+                        if (exprVal.length > template.currentVal) {
+                            /* Insert */
+                            textStrings = [];
+                            for (i = template.currentVal; i < exprVal.length; i++) {
+                                value = exprVal[i];
+                                instTmpl = tmplToInstTmplStringAndList(template, ctx, value);
+                                innerWrapper = wrapWithID(instTmpl.string, template.htmlTagType);
+                                instTmplLists[i] = instTmpl.list;
+                                forDomIds[i] = innerWrapper.id;
+                                textStrings.push(innerWrapper.text);
+                                if (forMap[getKey(value)] !== undefined)
+                                    console.log('ERROR: Cannot have multiple values mapping to the same value in a for-loop!');
+                                forMap[getKey(value)] = i;
+                            }
+                            template.getnoderef().insertBefore(documentFragFromHTML(textStrings.join('')), template.getcommentendnoderef());
+                        } else if (exprVal.length < template.currentVal) {
+                            /* Delete */
+                            nodeToDelete = template.getfornoderef(exprVal.length);
+                            while (nodeToDelete !== template.getcommentendnoderef()) {
+                                nextNode = nodeToDelete.nextSibling;
+                                template.getnoderef().removeChild(nodeToDelete);
+                                nodeToDelete = nextNode;
+                            }
+                        }
                     }
+
+                    ctx[template.forvar] = oldForCtxVal;
+                    template.forDomElements = forDomElements;
+                    template.forDomIds = forDomIds;
+                    template.instTmplList = instTmplLists;
+                    template.forMap = forMap;
+                    template.currentVal = exprVal.length;
+                } else if ((endMatchPosOld - startMatchPosOld) === (endMatchPosNew - startMatchPosNew)) {
+                    /* Found a good match */
+                    if (startMatchPosOld !== 0 || endMatchPosOld + 1 !== template.currentVal) {
+                        /* Remove old elements at the start */
+                        for (i = 0; i < startMatchPosOld; i++) {
+                            template.getnoderef().removeChild(template.getfornoderef(i));
+                        }
+                        /* Remove old elements at the end */
+                        for (i = endMatchPosOld + 1; i < template.currentVal; i++) {
+                            template.getnoderef().removeChild(template.getfornoderef(i));
+                        }
+                    }
+
+                    var startString = '', endString = '';
+                    /* Add new elements at start and end */
+                    for (i = 0; i < exprVal.length; i++) {
+                        if (i === startMatchPosNew) {
+                            /* Skip the elements between the two match positions */
+                            i = endMatchPosNew;
+                            continue;
+                        }
+                        value = exprVal[i];
+                        instTmpl = tmplToInstTmplStringAndList(template, ctx, value);
+                        innerWrapper = wrapWithID(instTmpl.string, template.htmlTagType);
+                        instTmplLists[i] = instTmpl.list;
+                        forDomIds[i] = innerWrapper.id;
+                        if (i < startMatchPosNew)
+                            startString += innerWrapper.text;
+                        else
+                            endString += innerWrapper.text;
+                        if (forMap[getKey(value)] !== undefined)
+                            console.log('ERROR: Cannot have multiple values mapping to the same value in a for-loop!');
+                        forMap[getKey(value)] = i;
+                    }
+                    if (startString !== '')
+                        template.getnoderef().insertBefore(documentFragFromHTML(startString),
+                            template.getcommentstartnoderef().nextSibling);
+                    if (endString !== '')
+                        template.getnoderef().insertBefore(documentFragFromHTML(endString),
+                            template.getcommentendnoderef());
+
+                    /* This loop assumes that (endMatchPosOld - startMatchPosOld) == (endMatchPosNew - startMatchPosNew)
+                     * (which we checked up above) */
+                    oldForCtxVal = ctx[template.forvar];
+                    for (i = startMatchPosOld; i <= endMatchPosOld; i++) {
+                        oldIdx = i;
+                        newIdx = i + (startMatchPosNew - startMatchPosOld);
+                        value = exprVal[newIdx];
+
+                        if (forMap[getKey(value)] !== undefined) {
+                            console.log('ERROR: Cannot have multiple values mapping to the same value in a for-loop!');
+                            return {text: '', instTmpl: undefined};
+                        }
+                        forMap[getKey(value)] = newIdx;
+                        forDomIds[newIdx] = template.forDomIds[oldIdx];
+                        forDomElements[newIdx] = template.forDomElements[oldIdx];
+
+                        instTmplLists[newIdx] = template.instTmplList[oldIdx].map(function (innerTmpl) {
+                            ctx[template.forvar] = value;
+                            return incrementalRerender(innerTmpl, ctx);
+                        });
+                    }
+                    ctx[template.forvar] = oldForCtxVal;
+                    template.forDomElements = forDomElements;
+                    template.forDomIds = forDomIds;
+                    template.instTmplList = instTmplLists;
+                    template.forMap = forMap;
+                    template.currentVal = exprVal.length;
                 } else {
-                    currMatchedPos = newPos;
-                    lastMatchedPos = newPos;
+                    /* This should never be reached */
+                    console.log("Error occurred while processing for-loop");
                 }
-                end--;
-            }
-            var i, innerWrapper, value, oldForCtxVal, oldIdx, newIdx, nextNode, nodeToDelete, newInstTmpl;
-            var instTmplLists = [], forDomIds = [], forDomElements = [], forMap = {};
-            if (endMatchPosOld === undefined || startMatchPosOld === undefined
-                || (endMatchPosOld - startMatchPosOld) !== (endMatchPosNew - startMatchPosNew)) {
-                /* No match found, or the match isn't fully valid because the amount of content within the match
-                 * is inconsistent, but attempt to reuse existing content */
+            } else { /* No list optimizations */
+                /* Attempt to reuse existing content */
                 oldForCtxVal = ctx[template.forvar];
                 for (i = 0; i < exprVal.length && i < template.currentVal; i++) {
                     value = exprVal[i];
 
-                    if (forMap[getKey(value)] !== undefined) {
-                        console.log('ERROR: Cannot have multiple values mapping to the same value in a for-loop!');
-                        continue;
-                    }
-                    forMap[getKey(value)] = i;
                     forDomIds[i] = template.forDomIds[i];
                     forDomElements[i] = template.forDomElements[i];
 
                     instTmplLists[i] = template.instTmplList[i].map(function (innerTmpl) {
                         ctx[template.forvar] = value;
-                        newInstTmpl = incrementalRerender(innerTmpl, ctx);
-                        return newInstTmpl;
+                        return incrementalRerender(innerTmpl, ctx);
                     });
                 }
 
@@ -395,7 +517,7 @@ function incrementalRerender(template, ctx) {
                 if (exprVal.length !== template.currentVal) {
                     if (exprVal.length > template.currentVal) {
                         /* Insert */
-                        var textStrings = [];
+                        textStrings = [];
                         for (i = template.currentVal; i < exprVal.length; i++) {
                             value = exprVal[i];
                             instTmpl = tmplToInstTmplStringAndList(template, ctx, value);
@@ -403,9 +525,6 @@ function incrementalRerender(template, ctx) {
                             instTmplLists[i] = instTmpl.list;
                             forDomIds[i] = innerWrapper.id;
                             textStrings.push(innerWrapper.text);
-                            if (forMap[getKey(value)] !== undefined)
-                                console.log('ERROR: Cannot have multiple values mapping to the same value in a for-loop!');
-                            forMap[getKey(value)] = i;
                         }
                         template.getnoderef().insertBefore(documentFragFromHTML(textStrings.join('')), template.getcommentendnoderef());
                     } else if (exprVal.length < template.currentVal) {
@@ -423,80 +542,7 @@ function incrementalRerender(template, ctx) {
                 template.forDomElements = forDomElements;
                 template.forDomIds = forDomIds;
                 template.instTmplList = instTmplLists;
-                template.forMap = forMap;
                 template.currentVal = exprVal.length;
-            } else if ((endMatchPosOld - startMatchPosOld) === (endMatchPosNew - startMatchPosNew)) {
-                /* Found a good match */
-                if (startMatchPosOld !== 0 || endMatchPosOld+1 !== template.currentVal) {
-                    /* Remove old elements at the start */
-                    for (i = 0; i < startMatchPosOld; i++) {
-                        template.getnoderef().removeChild(template.getfornoderef(i));
-                    }
-                    /* Remove old elements at the end */
-                    for (i = endMatchPosOld + 1; i < template.currentVal; i++) {
-                        template.getnoderef().removeChild(template.getfornoderef(i));
-                    }
-                }
-
-                var startString = '', endString = '';
-                /* Add new elements at start and end */
-                for (i = 0; i < exprVal.length; i++) {
-                    if (i === startMatchPosNew) {
-                        /* Skip the elements between the two match positions */
-                        i = endMatchPosNew;
-                        continue;
-                    }
-                    value = exprVal[i];
-                    instTmpl = tmplToInstTmplStringAndList(template, ctx, value);
-                    innerWrapper = wrapWithID(instTmpl.string, template.htmlTagType);
-                    instTmplLists[i] = instTmpl.list;
-                    forDomIds[i] = innerWrapper.id;
-                    if (i < startMatchPosNew)
-                        startString += innerWrapper.text;
-                    else
-                        endString += innerWrapper.text;
-                    if (forMap[getKey(value)] !== undefined)
-                        console.log('ERROR: Cannot have multiple values mapping to the same value in a for-loop!');
-                    forMap[getKey(value)] = i;
-                }
-                if (startString !== '')
-                    template.getnoderef().insertBefore(documentFragFromHTML(startString),
-                        template.getcommentstartnoderef().nextSibling);
-                if (endString !== '')
-                    template.getnoderef().insertBefore(documentFragFromHTML(endString),
-                        template.getcommentendnoderef());
-
-                /* This loop assumes that (endMatchPosOld - startMatchPosOld) == (endMatchPosNew - startMatchPosNew)
-                 * (which we checked up above) */
-                oldForCtxVal = ctx[template.forvar];
-                for (i = startMatchPosOld; i <= endMatchPosOld; i++) {
-                    oldIdx = i;
-                    newIdx = i + (startMatchPosNew - startMatchPosOld);
-                    value = exprVal[newIdx];
-
-                    if (forMap[getKey(value)] !== undefined) {
-                        console.log('ERROR: Cannot have multiple values mapping to the same value in a for-loop!');
-                        return {text: '', instTmpl: undefined};
-                    }
-                    forMap[getKey(value)] = newIdx;
-                    forDomIds[newIdx] = template.forDomIds[oldIdx];
-                    forDomElements[newIdx] = template.forDomElements[oldIdx];
-
-                    instTmplLists[newIdx] = template.instTmplList[oldIdx].map(function (innerTmpl) {
-                        ctx[template.forvar] = value;
-                        newInstTmpl = incrementalRerender(innerTmpl, ctx);
-                        return newInstTmpl;
-                    });
-                }
-                ctx[template.forvar] = oldForCtxVal;
-                template.forDomElements = forDomElements;
-                template.forDomIds = forDomIds;
-                template.instTmplList = instTmplLists;
-                template.forMap = forMap;
-                template.currentVal = exprVal.length;
-            } else {
-                /* This should never be reached */
-                console.log("Error occurred while processing for-loop");
             }
             return template;
     }
@@ -591,11 +637,13 @@ function htmlRender(template, ctx) {
             var instTmplStringsCombined, instTmplStrings = [], instTmplLists = [], forDomIds = [], forMap = {}, pos = 0, hasCommentNodes, innerWrapper;
             exprVal = evalInContext(template.expr, ctx);
             exprVal.forEach(function (value) {
-                if (forMap[getKey(value)] !== undefined) {
-                    console.log('ERROR: Cannot have multiple values mapping to the same value in a for-loop!');
-                    return;
+                if (this.useOptimizations) {
+                    if (forMap[getKey(value)] !== undefined) {
+                        console.log('ERROR: Cannot have multiple values mapping to the same value in a for-loop!');
+                        return;
+                    }
+                    forMap[getKey(value)] = pos++;
                 }
-                forMap[getKey(value)] = pos++;
                 instTmpl = tmplToInstTmplStringAndList(template, ctx, value);
                 innerWrapper = wrapWithID(instTmpl.string, template.htmlTagType);
                 instTmplStrings.push(innerWrapper.text);
@@ -627,7 +675,7 @@ function htmlRender(template, ctx) {
  * RETURNS an uninstantiated Template. */
 function compile(markup) {
     // ===== nested function =======
-    function parseFn(match, htmltagtype, tagtype, forvar, expr, offset, string) {
+    function parseFn(match, htmltagtype, tagtype, optimization, forvar, expr, offset, string) {
         nestedTmpls.push(new Template('string', string.substring(parseLoc, offset)));
         parseLoc = offset + match.length;
 
@@ -638,6 +686,7 @@ function compile(markup) {
             current = new Template(tagtype === 'if' ? 'if' : 'for', fnFromString(expr), htmltagtype);
             if (tagtype !== 'if') {
                 current.forvar = forvar;
+                current.useOptimizations = optimization === '*';
             }
             nestedTmpls.push(current);
             nestedTmpls = current.tmplList;
