@@ -11,7 +11,7 @@
 var allowedHtmlTags = ['div', 'span', 'ul', 'ol', 'p', 'table', 'tr', 'td', 'li',
     'a', 'b', 'blockquote', 'button', 'code', 'em', 'form', 'h1', 'h2', 'h3', 'h4',
     'h5', 'h6', 'img', 'pre', 'strong', 'th'];
-var rParse = new RegExp('\\{(' + allowedHtmlTags.join('|') + ')?\\{(html|if|text|for\\(([a-zA-Z]+)\\)|\\/if|\\/for)?(.*?)}}', 'g');
+var rParse = new RegExp('\\{(' + allowedHtmlTags.join('|') + ')?\\{(html|if|text|for\\(([a-zA-Z][a-zA-Z0-9]*)\\)|\\/if|\\/for)?(.*?)}}', 'g');
 
 /* Parameters for list-matching optimizations */
 var LIST_MATCH_TRAVERSE_FRACTION = 0.5, /* Fraction of the list to traverse looking for matches */
