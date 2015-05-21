@@ -11,7 +11,7 @@
 var allowedHtmlTags = ['div', 'span', 'ul', 'ol', 'p', 'table', 'tr', 'td', 'li',
     'a', 'b', 'blockquote', 'button', 'code', 'em', 'form', 'h1', 'h2', 'h3', 'h4',
     'h5', 'h6', 'img', 'pre', 'strong', 'th'];
-var rParse = new RegExp('\\{(' + allowedHtmlTags.join('|') + ')?\\{(if|text|for\\(([a-zA-Z]+)\\)|\\/if|\\/for)?(.*?)}}', 'g');
+var rParse = new RegExp('\\{(' + allowedHtmlTags.join('|') + ')?\\{(html|if|text|for\\(([a-zA-Z]+)\\)|\\/if|\\/for)?(.*?)}}', 'g');
 
 /* Parameters for list-matching optimizations */
 var LIST_MATCH_TRAVERSE_FRACTION = 0.5, /* Fraction of the list to traverse looking for matches */
@@ -631,7 +631,7 @@ function compile(markup) {
         nestedTmpls.push(new Template('string', string.substring(parseLoc, offset)));
         parseLoc = offset + match.length;
 
-        if (tagtype === undefined || tagtype === 'text') {
+        if (tagtype === undefined || tagtype === 'text' || tagtype === 'html') {
             nestedTmpls.push(new Template(tagtype || 'html', fnFromString(expr), htmltagtype));
         } else if (tagtype === 'if' || tagtype.substring(0,3) === 'for') {
             stack.push(current);
