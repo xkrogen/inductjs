@@ -347,7 +347,7 @@ For our example template, if we render it in the context:
 </pre>
 <p>the figure below shows the generated HTML at the right, and the snapshot tree data structure at the left:</p>
 
-<img src="" alt="Diagram of the example above">
+<img src="http://rawgit.com/xkrogen/inductjs/master/writeup/diagram.png" alt="Diagram of the example above">
 
 <p>The inner "html" template within the second iteration of the "for" template is not currently displayed, so it has <span class="code">host</span> and <span class="code">prev</span> values which are null. The "for" template stores a previous value which is equal to the length of the currently displayed array rather than the array itself, since the relevant content is already stored as the previous value within the inner iterations. The <span class="code">list-start</span> and <span class="code">list-end</span> comment nodes are used to keep track of the bounds of the "for" template's iterations; this becomes especially important when the displayed array contains zero elements.</p>
 
