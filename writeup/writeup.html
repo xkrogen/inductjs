@@ -1,0 +1,365 @@
+<html>
+
+<head>
+  <title>InductJS: INcremental DOM Updates in Client-side Templating for JavaScript</title>
+  <style>
+    .code {
+      font-family: "Lucida Console", Monaco, monospace;
+      font-size: 85%;
+    }
+
+    table {
+      margin-top: 15px;
+      margin-bottom: 12px;
+      border-collapse: collapse;
+    }
+
+    table, th, td {
+      border: 1px solid #ccc;
+    }
+
+    b {
+      font-weight: 900;
+    }
+    
+    th {
+      font-weight: 900;
+      text-align: center;
+    }
+
+    td {
+      width: 50px;
+    }
+
+    td.head {
+      width: 150px;
+      padding-left: 5px;
+    }
+    
+    .table-val {
+      padding-right: 5px;
+      text-align: right;
+      font-weight: 900;
+    }
+
+    .fastest {
+      color: green;
+    }
+
+    .slowest {
+      color: red;
+    }
+
+    .entry-content p {
+      font-size: 16px;
+      padding-top: 0px;
+      margin-top: 0px;
+      margin-bottom: 0px;
+      margin-left: 0px;
+      padding-left: 0px;
+    }
+    
+    .indented {
+      margin-top: 0px;
+      padding-top: 0px;
+      margin-left: 45px;
+      margin-bottom: 10px;
+    }
+
+    h3 {
+      margin-top: 8px;
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- Table of Contents, disabled for now 
+<p style="margin-top: 10px;">
+<a href="#overview">Overview</a><br />
+<a href="#results">Results / Comparisons</a><br />
+<a href="#usage">InductJS Usage</a><br />
+<a href="#implementation">InductJS Implementation Details</a><br />
+<a href="#for-optimizations" style="margin-left: 20px;">List Optimizations</a>
+</p>
+-->
+
+<h2 id="overview">Overview</h2>
+<p>Client-side JavaScript templating is widely used in modern web sites. The performance of template instantiation and rendering has a direct impact on the usability of the web site because of JavaScript's single-threaded execution model. In many cases the performance of template instantiation and rendering is dominated not by JavaScript instantiating the template, but by the browser rendering the instantiated HTML string into the DOM. Even though there are <a href="http://garann.github.io/template-chooser/">numerous libraries</a> that implement client-side JavaScript templating, we believe that there is significant untapped potential to exploit the common use case when a template is re-rendered onto the same place in the web page, with some partial changes to the underlying data to be rendered. This can happen, for example, when the client has received new data from the server and must update part of the web page. Often developers attempt to identify manually the parts of the web page that must be updated, based on keeping track of what has changed in the underlying data and using fine-grained templates that can be rendered independently. We believe that this bookkeeping job can be done better by the templating library.</p>
+
+
+<p>In this project we are proposing an optimization to client-side JavaScript rendering whereby upon re-rendering the template, the resulting instantiation is compared efficiently with the result of the previous rendering, and only the changed DOM elements are updated. To this end we have developed a very simple compact web templating system, called InductJS, designed to update the DOM incrementally upon re-rendering of templates. In its current form, InductJS certainly works and is definitely fast, but supports only a minimal set of templating features, enough to allow us to evaluate the performance impact of the incrementality optimizations we are proposing in comparison with two other modern templating systems: <a href="https://facebook.github.io/react/">React</a> and <a href="https://angularjs.org/">AngularJS</a>. We believe that these results suggest that it may be profitable to implement these optimizations in other fully-featured templating systems. </p>
+
+<p>We describe first the results of the performance comparisons with React and AngularJS, then we describe the usage and implementation details of InductJS.</p>
+
+<h2 id="results">Results / Comparisons</h2>
+<p>In order to test the effect of incrementality optimizations, we wrote a template for an HTML table, backed by a 2-dimensional JavaScript array, which in its base form contains 300 rows, each row consisting of an array of 15 strings elements. This benchmark is similar to other performance comparisons we have seen using long lists (<a href="http://mono.software/posts/Improving-AngularJS-long-list-rendering-performance-using-ReactJS/">Improving AngularJS long list rendering performance using ReactJS</a>, <a href="http://www.williambrownstreet.net/blog/2014/04/faster-angularjs-rendering-angularjs-and-reactjs/">Faster AngularJS Rendering (AngularJS and ReactJS)</a>). We implemented a simple comparison web page (see links in the table below) that renders this template with InductJS, and also with AngularJS 1.4.0-rc.2, React 0.12.2 and React 0.13.3. Two versions of React were tested because we found that the most recent version of React (0.13.3) underperformed considerably in comparison to React 0.12.2 in some situations. The comparison web page allows the user to select which templating system to use, and presents several buttons for re-rendering the template in several scenarios for changes to the underlying data, as discussed below. For every rendering, the page shows the time taken to re-render. This time is measured by taking the difference in system time before and after requesting a re-render through the current framework. Unfortunately, this does not measure the entirety of the update, since the browser will perform some extra style calculation and painting after the rendering call. Initially we attempted to force the browser to finish re-rendering completely by accessing properties (such as width) of a displayed DOM node, but found that the browser was still able to perform steps afterwards. However, we found by viewing the Chrome timeline profiler that the amount of time spent after returning from the JavaScript function was negligible in comparison to the time spent during the JavaScript execution, and was relatively consistent across different frameworks / methods of updating. </p>
+
+<p>We summarize in the table below some of the performance results. The leftmost column contains the name and a description of the change-scenario considered. (The name of the scenario is shown in bold, and corresponds to the title of the corresponding control on the comparison web page.) We have found that the performance can depend considerably on whether we update a templating site on the page with text only (no HTML markup, as is the default for expressions in React and AngularJS, and InductJS's "text" templating sites), or if we allow the templating site to change the markup (React's dangerouslySetInnerHTML property, AngularJS's "ng-bind-html" directive, and InductJS's  "html" templating sites).  The table shows rendering times in milliseconds as measured with Chrome 42.0.2311.39 using Linux Mint 17 on an Intel i7 4750HQ processor at 2 GHz. </p>
+
+<table>
+<tr><th colspan="9">Rendering time (in milliseconds) for a nested array of 300 rows, each containing 15 elements</th></tr>
+<tr><th rowspan="2">Scenario</th><th colspan="2">InductJS</th><th colspan="2">AngularJS 1.4.0-rc.2</th><th colspan="2">React 0.12.2</th><th colspan="2">React 0.13.3</th></tr>
+<tr>
+    <th><a href="http://rawgit.com/xkrogen/inductjs/master/examples/changing-list-nested/induct.html">Text Only</a></th><th><a href="http://rawgit.com/xkrogen/inductjs/master/examples/changing-list-nested/induct-html.html">HTML Content</a></th>
+    <th><a href="http://rawgit.com/xkrogen/inductjs/master/examples/changing-list-nested/angular.html">Text Only</a></th><th><a href="http://rawgit.com/xkrogen/inductjs/master/examples/changing-list-nested/angular-html.html">HTML Content</a></th>
+    <th><a href="http://rawgit.com/xkrogen/inductjs/master/examples/changing-list-nested/react-old.html">Text Only</a></th><th><a href="http://rawgit.com/xkrogen/inductjs/master/examples/changing-list-nested/react-old-html.html">HTML Content</a></th>
+    <th><a href="http://rawgit.com/xkrogen/inductjs/master/examples/changing-list-nested/react.html">Text Only</a></th><th><a href="http://rawgit.com/xkrogen/inductjs/master/examples/changing-list-nested/react-old-html.html">HTML Content</a></th>
+  </tr>
+<tr><td class="head"><b>Initial Rendering</b></td>
+<td class="table-val">222</td>
+<td class="table-val">231</td>
+<td class="table-val">*</td>
+<td class="table-val">*</td>
+<td class="table-val fastest">106</td>
+<td class="table-val fastest">130</td>
+<td class="table-val">340</td>
+<td class="table-val">330</td>
+</tr>
+<tr><td class="head"><b>Rerender With No Changes</b></td>
+<td class="table-val">26</td>
+<td class="table-val">28</td>
+<td class="table-val fastest">2</td>
+<td class="table-val fastest">2</td>
+<td class="table-val">21</td>
+<td class="table-val">32</td>
+<td class="table-val slowest">121</td>
+<td class="table-val slowest">124</td>
+</tr>
+<tr><td class="head"><b>Change All Rows:</b>
+all row arrays are replaced</td>
+<td class="table-val fastest">59</td>
+<td class="table-val">775</td>
+<td class="table-val slowest">1572</td>
+<td class="table-val slowest">962</td>
+<td class="table-val">195</td>
+<td class="table-val">373</td>
+<td class="table-val">297</td>
+<td class="table-val">555</td>
+</tr>
+<tr><td class="head"><b>Change All Elements:</b>
+all elements are replaced</td>
+<td class="table-val fastest">53</td>
+<td class="table-val">779</td>
+<td class="table-val slowest">1701</td>
+<td class="table-val slowest">1002</td>
+<td class="table-val">202</td>
+<td class="table-val">396</td>
+<td class="table-val">324</td>
+<td class="table-val">575</td>
+</tr>
+<tr><td class="head"><b>Change 75% of Rows:</b>
+random selection of 75% of rows are replaced</td>
+<td class="table-val fastest">50</td>
+<td class="table-val slowest">598</td>
+<td class="table-val slowest">536</td>
+<td class="table-val slowest">788</td>
+<td class="table-val">164</td>
+<td class="table-val">312</td>
+<td class="table-val">276</td>
+<td class="table-val">480</td>
+</tr>
+<tr><td class="head"><b>Change 75% of Elements:</b>
+random selection of 75% of elements are replaced</td>
+<td class="table-val fastest">54</td>
+<td class="table-val slowest">598</td>
+<td class="table-val slowest">576</td>
+<td class="table-val slowest">754</td>
+<td class="table-val">166</td>
+<td class="table-val">317</td>
+<td class="table-val">276</td>
+<td class="table-val">481</td>
+</tr>
+<tr><td class="head"><b>Change 50% of Rows</b></td>
+<td class="table-val fastest">51</td>
+<td class="table-val">416</td>
+<td class="table-val">363</td>
+<td class="table-val">506</td>
+<td class="table-val">119</td>
+<td class="table-val">223</td>
+<td class="table-val">239</td>
+<td class="table-val">370</td>
+</tr>
+<tr><td class="head"><b>Change 50% of Elements</b></td>
+<td class="table-val fastest">50</td>
+<td class="table-val">438</td>
+<td class="table-val">432</td>
+<td class="table-val">562</td>
+<td class="table-val">125</td>
+<td class="table-val">227</td>
+<td class="table-val">232</td>
+<td class="table-val">378</td>
+</tr>
+<tr><td class="head"><b>Change 25% of Rows</b></td>
+<td class="table-val fastest">48</td>
+<td class="table-val">224</td>
+<td class="table-val">188</td>
+<td class="table-val">259</td>
+<td class="table-val fastest">75</td>
+<td class="table-val">135</td>
+<td class="table-val">182</td>
+<td class="table-val">245</td>
+</tr>
+<tr><td class="head"><b>Change 25% of Elements</b></td>
+<td class="table-val fastest">63</td>
+<td class="table-val">251</td>
+<td class="table-val">256</td>
+<td class="table-val">337</td>
+<td class="table-val fastest">78</td>
+<td class="table-val">140</td>
+<td class="table-val">186</td>
+<td class="table-val">256</td>
+</tr>
+<tr><td class="head"><b>Insert 30 Rows at Start</b></td>
+<td class="table-val">59</td>
+<td class="table-val">63</td>
+<td class="table-val">82</td>
+<td class="table-val">111</td>
+<td class="table-val">57</td>
+<td class="table-val">89</td>
+<td class="table-val slowest">163</td>
+<td class="table-val slowest">211</td>
+</tr>
+<tr><td class="head"><b>Delete 30 Rows from Start</b></td>
+<td class="table-val">28</td>
+<td class="table-val">31</td>
+<td class="table-val fastest">2</td>
+<td class="table-val fastest">2</td>
+<td class="table-val">28</td>
+<td class="table-val">42</td>
+<td class="table-val slowest">123</td>
+<td class="table-val slowest">131</td>
+</tr>
+<tr><td class="head"><b>Insert 30 Rows at End</b></td>
+<td class="table-val">59</td>
+<td class="table-val">61</td>
+<td class="table-val">82</td>
+<td class="table-val">111</td>
+<td class="table-val">44</td>
+<td class="table-val">73</td>
+<td class="table-val slowest">154</td>
+<td class="table-val slowest">191</td>
+</tr>
+<tr><td class="head"><b>Delete 30 Rows from End</b></td>
+<td class="table-val">29</td>
+<td class="table-val">28</td>
+<td class="table-val fastest">3</td>
+<td class="table-val fastest">3</td>
+<td class="table-val">25</td>
+<td class="table-val">35</td>
+<td class="table-val slowest">121</td>
+<td class="table-val slowest">123</td>
+</tr>
+<tr><td class="head"><b>Insert Row in Middle</b></td>
+<td class="table-val">27</td>
+<td class="table-val">39</td>
+<td class="table-val fastest">9</td>
+<td class="table-val fastest">10</td>
+<td class="table-val">26</td>
+<td class="table-val">38</td>
+<td class="table-val slowest">121</td>
+<td class="table-val slowest">128</td>
+</tr>
+<tr><td class="head"><b>Change Row in Middle</b></td>
+<td class="table-val">28</td>
+<td class="table-val">34</td>
+<td class="table-val fastest">10</td>
+<td class="table-val fastest">10</td>
+<td class="table-val">24</td>
+<td class="table-val">32</td>
+<td class="table-val slowest">121</td>
+<td class="table-val slowest">124</td>
+</tr>
+</table>
+<p>A few interesting things to notice:</p>
+
+<ul>
+<li>We have not found a good way to obtain measurements for AngularJS's initial rendering time so we have left those items blank.</li>
+<li>For large changes (i.e. any of the comparisons that change a percent of the elements) using text-only sites, InductJS is far faster than any of the frameworks. This is especially interesting since in InductJS using a text-only site is an optimization, whereas in React and AngularJS it is the default. </li>
+<li>AngularJS has blazing fast times for re-rendering without changes. React 0.12.2 and InductJS perform similarly, and React 0.13.3 lags significantly behind.</li>
+<li>For the operations which do not affect large amounts of the data, the performance is mostly limited by the amount of time it takes to do a full re-check (i.e. a re-render with no changes). For AngularJS and InductJS, deleting rows from either end takes a trivial amount of time. For InductJS (when using text-only) and ReactJS (either template type), inserting or changing a row in the middle takes a trivial amount of time. </li>
+<li>Using template sites which are only capable of text vs HTML-capable has very different effects on different frameworks. Most notably, AngularJS is actually faster when using HTML sites for a full refresh, and only around 20% slower for other large operations. React has a bit larger discrepancy, taking up to nearly twice as long on some large operations for HTML sites. InductJS has the largest difference, with HTML sites taking over 10x as long on large operations!</li>
+<li>For large changes using HTML sites, InductJS outperforms AngularJS by a fair margin, but React is able to outperform InductJS (especially 0.12.2). This may indicate that there is more room for improvement in InductJS.</li>
+</ul>
+
+<h2 id="usage">InductJS Usage</h2>
+<p>A template is an HTML string that contains within it templating sites that are replaced with HTML content when the template is rendered. Each templating site contains one JavaScript expression that is evaluated in a context passed to the template rendering function. We implemented four types of template sites: "html", "text", "if", and "for", which are represented and rendered as follows:</p>
+
+<p>"html": <span class="code">{{<em>html-content-expression</em>}}</span></p>
+<div class="indented">The expression is evaluated in the current context and the result, which may contain HTML markup, is rendered in place of the templating site.</div>
+
+<p>"text": <span class="code">{{<b>text</b> <em>literal-content-expression</em>}}</span></p>
+<div class="indented">The expression is evaluated in the current context and the resulting string, which may <b>not</b> contain HTML markup, is rendered in place of the templating site. This is an optimization inspired by AngularJS's expressions, which by default only display text content. Using text only allows for more efficient updating in the browser because we can directly modify the <span class="code">nodeValue</span> of the Text node which is used to display the content, rather than modifying the <span class="code">innerHTML</span> of the host, hinting to the browser that no structural changes have occurred and that no HTML parsing is necessary.</div>
+
+<p>"if": <span class="code">{{<b>if</b> <em>boolean-expression</em>}} <em>inner-template</em> {{/if}}</span></p>
+<div class="indented">The boolean expression is evaluated in the current context and if the result is "true" the inner content template is rendered using the current context; if the result is "false" no content is rendered. </div>
+
+<p>"for": <span class="code">{{<b>for</b>(<em>for-variable</em>) <em>list-expression</em>}} <em>inner-template-to-repeat</em> {{/for}}</span></p>
+<div class="indented">The list expression is evaluated in the current context and the result should be a list/array value. The inner content template is rendered repeatedly once for every value in the list, with a context obtained by extending the current context with the <span class="code">for-variable</span> set to the current list element. </div>
+
+<p>In order to support incremental updating of the DOM, each templating site when rendered into the DOM will be wrapped inside host HTML elements, by default with the tag "span". To specify a different tag for the host element, include it between the opening braces. In case of a "for" templating site, each copy of the rendered inner template will be wrapped in a separate element. To access variables contained within the context which is passed in to render, refer to them using <span class="code">context.var_name</span> (the required use of <span class="code">context</span> rather than a bare variable name is a simple limitation due to the way expressions are treated; if a full expression parser was used this would be unnecessary, but that is beyond the scope of the project at this time). </p>
+
+<p>For example, to display a table, we might use a markup string like:</p>
+
+<pre class="code">
+&lt;table&gt; 
+  {tr{for(row) context.rows}}
+    &lt;td&gt;Row:&lt;/td&gt; 
+    {td{text context.row.content}} 
+    {td{if context.row.footer}} {{'&lt;b&gt;' + context.row.footer + '&lt;/b&gt;'}} {{/if}}
+  {{/for}} 
+&lt;/table&gt;
+</pre>
+<p>Then to display this table inside of a div with an ID of "insertPoint", we would do:</p>
+
+<pre class="code">
+rend_template = render(template,                              # the template string
+                       {rows: myArray},                       # the context    
+                       document.getElementById("insertPoint") # the host DOM element
+);
+</pre>
+<p>where <span class="code">myArray</span> is an array of objects such as <span class="code">{content: "Message", footer: "ending"}</span>.</p>
+
+<p>And, if <span class="code">myArray</span> changed, to update the displayed content (note that the template you pass in must be the template returned from the initial render, not the template string):</p>
+<pre class="code">
+rend_template = render(rend_template, {rows: myArray});
+</pre>
+
+
+<h2 id="implementation">InductJS Implementation Details</h2>
+<p>We discuss the implementation details in the context of the same example we used in the Usage section above.</p>
+
+<p>When a template is rendered for the first time, the following actions are performed:</p>
+
+<ul>
+<li>the template is compiled and cached: the templating sites are identified, the corresponding expressions are wrapped and cached as JavaScript functions.</li>
+<li>each templating site is instantiated by evaluating the expressions contained in the template, as explained in the Usage section. Each instantiated site is then rendered into the DOM, wrapped into a host element. </li>
+<li>when rendering a template, we construct a snapshot tree data structure with nodes corresponding to the instantiated template sites. For each instantiated template site we record the previous value of the evaluated expression (labeled "prev"), a reference to the DOM host element (labeled "host"), and references to the snapshot sub-trees recording the information for the inner templates (labeled "inner"). </li>
+</ul>
+For our example template, if we render it in the context:
+<pre class="code">
+  { rows : [
+       {content = "Row 1", footer = "Foot 1"}, 
+       {content = "Row 2"}
+    ] 
+  }
+</pre>
+<p>the figure below shows the generated HTML at the right, and the snapshot tree data structure at the left:</p>
+
+<img src="" alt="Diagram of the example above">
+
+<p>The inner "html" template within the second iteration of the "for" template is not currently displayed, so it has <span class="code">host</span> and <span class="code">prev</span> values which are null. The "for" template stores a previous value which is equal to the length of the currently displayed array rather than the array itself, since the relevant content is already stored as the previous value within the inner iterations. The <span class="code">list-start</span> and <span class="code">list-end</span> comment nodes are used to keep track of the bounds of the "for" template's iterations; this becomes especially important when the displayed array contains zero elements.</p>
+
+<p>When a template is re-rendered into the same top-level host DOM element, we traverse the snapshot tree data structure, and we reevaluate the expressions in the new context. If the expression evaluates to something different than previously stored in the snapshot, we update the DOM, and adjust the snapshot tree accordingly. However, in the common case when the expression evaluates to the same value as in the snapshot, we do not update the DOM. Even in this case, for "if" and "for" template sites, we continue evaluating the inner template sites (<span class="code">inner</span> and <span class="code">inner_iterations</span>) and compare with the snapshot to find more places that need to be updated. </p>
+
+<p>When an "if" template that was previously false evaluates to true, its inner templates are not currently displayed (as above for the second iteration of the "for" template), so we can't perform an incremental render. In this situation, or for the similar situation where a "for" array grows in size and a new inner iteration must be added, we perform a full HTML string render and place this into the DOM, exactly as we do when we insert a template for the first time. When a "for" array has grown shorter or an "if" template goes from true to false, we simply clear out the matching content. More details about how "for" templates are handled incrementally can be found in the next section. </p>
+
+<h3 id="for-optimizations">"For" Template Optimizations</h3>
+<p>"For" template optimizations are disabled by default, but can be enabled on a per-template basis by using "for*" instead of "for" as the template type (e.g., <span class="code">{{for*(row) context.rows}}</span>). Currently the optimizations employed on "for" templates are somewhat limited, and are optimized for insertion and deletion at either end of the array. We traverse both the new and previous arrays from each end, attempting to find a "match" between the two (defined as 5 or more elements in a row that are equal between the new and previous arrays). If a match is found from both ends, items are then deleted and added outside of the match area as necessary, then the area between the two matches is updated incrementally. This allows us to attempt to leverage as much of the existing content as possible. If no match is found, we still attempt to leverage existing content by performing incremental rerendering on the existing items. </p>
+
+<p>Note that each element of the array used in an optimized "for" template <b>must</b> be unique. You cannot have duplicate strings / numeric values and you cannot use the same object reference twice. This is a limitation due to the way the optimizations are implemented - the current location of an item within the list is tracked using a hash table mapping items to their indices, similar to what is used by React and AngularJS. Allowing a separate array of keys to be used to track elements, similar to what is <a href="https://facebook.github.io/react/docs/multiple-components.html#dynamic-children">required by React</a> and <a href="https://docs.angularjs.org/api/ng/directive/ngRepeat#tracking-and-duplicates">available in AngularJS</a>, may be implemented in the future.</p>
+
+</body>
+
+</html>
