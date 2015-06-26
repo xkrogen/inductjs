@@ -363,7 +363,7 @@ For our example template, if we render it in the context:
 <p>Note that each element of the array used in an optimized "for" template <b>must</b> be unique. You cannot have duplicate strings / numeric values and you cannot use the same object reference twice. This is a limitation due to the way the optimizations are implemented - the current location of an item within the list is tracked using a hash table mapping items to their indices, similar to what is used by React and AngularJS. Allowing a separate array of keys to be used to track elements, similar to what is <a href="https://facebook.github.io/react/docs/multiple-components.html#dynamic-children">required by React</a> and <a href="https://docs.angularjs.org/api/ng/directive/ngRepeat#tracking-and-duplicates">available in AngularJS</a>, may be implemented in the future.</p>
 
 <p>
-<b>Edit (6/26/15):</b> In a previous version of this writeup, we have have
+<b>Edit (6/26/15):</b> In a previous version of this writeup, we have
 accidentally shown performance measurements using the development build of React rather than the production build. During the re-testing phase, we discovered some discrepancies in our data, and have regenerated all of the performance data with a higher level of confidence that they are consistent. Switching from the development to production build of React also removed the performance degradation from React version 0.12.2 to 0.13.3, so we have removed the older version of React from our comparisons. The discussion beneath the performance data has been adjusted somewhat to reflect the new data. 
 </p>
 
