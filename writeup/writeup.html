@@ -94,9 +94,44 @@
 <p>We describe first the results of the performance comparisons with React and AngularJS, then we describe the usage and implementation details of InductJS.</p>
 
 <h2 id="results">Results / Comparisons</h2>
-<p>In order to test the effect of incrementality optimizations, we wrote a template for an HTML table, backed by a 2-dimensional JavaScript array, which in its base form contains 300 rows, each row consisting of an array of 15 strings elements. This benchmark is similar to other performance comparisons we have seen using long lists (<a href="http://mono.software/posts/Improving-AngularJS-long-list-rendering-performance-using-ReactJS/">Improving AngularJS long list rendering performance using ReactJS</a>, <a href="http://www.williambrownstreet.net/blog/2014/04/faster-angularjs-rendering-angularjs-and-reactjs/">Faster AngularJS Rendering (AngularJS and ReactJS)</a>). We implemented a simple comparison web page (see links in the table below) that renders this template with InductJS, and also with AngularJS 1.4.0-rc.2, React 0.12.2 and React 0.13.3. Two versions of React were tested because we found that the most recent version of React (0.13.3) underperformed considerably in comparison to React 0.12.2 in some situations. The comparison web page allows the user to select which templating system to use, and presents several buttons for re-rendering the template in several scenarios for changes to the underlying data, as discussed below. For every rendering, the page shows the time taken to re-render. This time is measured by taking the difference in system time before and after requesting a re-render through the current framework. Unfortunately, this does not measure the entirety of the update, since the browser will perform some extra style calculation and painting after the rendering call. Initially we attempted to force the browser to finish re-rendering completely by accessing properties (such as width) of a displayed DOM node, but found that the browser was still able to perform steps afterwards. However, we found by viewing the Chrome timeline profiler that the amount of time spent after returning from the JavaScript function was negligible in comparison to the time spent during the JavaScript execution, and was relatively consistent across different frameworks / methods of updating. </p>
+<p>In order to test the effect of incrementality optimizations, we wrote a template for an HTML table, backed by a 2-dimensional JavaScript array, which in its base form contains 300 rows, each row consisting of an array of 15 strings elements. This benchmark is similar to other performance comparisons we have seen using long lists (<a href="http://mono.software/posts/Improving-AngularJS-long-list-rendering-performance-using-ReactJS/">Improving AngularJS long list rendering performance using ReactJS</a>, <a href="http://www.williambrownstreet.net/blog/2014/04/faster-angularjs-rendering-angularjs-and-reactjs/">Faster AngularJS Rendering (AngularJS and ReactJS)</a>). 
+We implemented a simple comparison web page (see links in the table below)
+that renders this template with InductJS, and also with AngularJS 1.4.0-rc.2,
+and React 0.13.3. We used the production builds of AngularJS and React.
+The comparison
+web page allows the user to select which templating system to use, and
+presents several buttons for re-rendering the template in several scenarios
+for changes to the underlying data, as discussed below. For every rendering,
+the page shows the time taken to re-render. This time is measured by taking
+the difference in system time before and after requesting a re-render through
+the current framework. Unfortunately, this does not measure the entirety of
+the update, since the browser will perform some extra style calculation and
+painting after the rendering call. Initially we attempted to force the browser
+to finish re-rendering completely by accessing properties (such as width) of a
+displayed DOM node, but found that the browser was still able to perform steps
+afterwards. However, we found by viewing the Chrome timeline profiler that the
+amount of time spent after returning from the JavaScript function was
+negligible in comparison to the time spent during the JavaScript execution,
+and was relatively consistent across different frameworks / methods of
+updating. </p>
 
-<p>We summarize in the table below some of the performance results. The leftmost column contains the name and a description of the change-scenario considered. (The name of the scenario is shown in bold, and corresponds to the title of the corresponding control on the comparison web page.) We have found that the performance can depend considerably on whether we update a templating site on the page with text only (no HTML markup, as is the default for expressions in React and AngularJS, and InductJS's "text" templating sites), or if we allow the templating site to change the markup (React's dangerouslySetInnerHTML property, AngularJS's "ng-bind-html" directive, and InductJS's  "html" templating sites).  The table shows rendering times in milliseconds as measured with Chrome 42.0.2311.39 using Linux Mint 17 on an Intel i7 4750HQ processor at 2 GHz. </p>
+<p>We summarize in the table below some of the performance results. Best
+result for each test is shown in green, and the worst result in red. The
+leftmost column contains the name and a description of the change-scenario
+considered. (The name of the scenario is shown in bold, and corresponds to the
+title of the corresponding control on the comparison web page.) We have found
+that the performance can depend considerably on whether we update a templating
+site on the page with text only (no HTML markup, as is the default for
+expressions in React and AngularJS, and InductJS's "text" templating sites),
+or if we allow the templating site to change the markup (React's
+dangerouslySetInnerHTML property, AngularJS's "ng-bind-html" directive, and
+InductJS's "html" templating sites). The table shows rendering times in
+milliseconds as measured with Chrome 42.0.2311.39 using Linux Mint 17 on an
+Intel i7 4750HQ processor at 2 GHz. In order to ensure higher consistency of
+results across different runs, we used a separate profile in Chrome, we
+rebooted the computer and ensured that only Chrome is running, and we opened
+only the browser tab with the performance tests. </p>
+
 
 <table>
 <tr><th colspan="9">Rendering time (in milliseconds) for a nested array of 300 rows, each containing 15 elements</th></tr>
@@ -328,7 +363,8 @@ For our example template, if we render it in the context:
 <p>Note that each element of the array used in an optimized "for" template <b>must</b> be unique. You cannot have duplicate strings / numeric values and you cannot use the same object reference twice. This is a limitation due to the way the optimizations are implemented - the current location of an item within the list is tracked using a hash table mapping items to their indices, similar to what is used by React and AngularJS. Allowing a separate array of keys to be used to track elements, similar to what is <a href="https://facebook.github.io/react/docs/multiple-components.html#dynamic-children">required by React</a> and <a href="https://docs.angularjs.org/api/ng/directive/ngRepeat#tracking-and-duplicates">available in AngularJS</a>, may be implemented in the future.</p>
 
 <p>
-<b>Edit (6/26/15):</b> We were informed that we accidentally ran our performance measurements on the development build of React rather than the production build. During the re-testing phase, we discovered some discrepancies in our data, and have regenerated all of the performance data with a higher level of confidence that they are consistent. Switching from the development to production build of React also removed the performance degredation from React version 0.12.2 to 0.13.3, so we have removed the older version of React from our comparisons. The discussion beneath the performance data has been adjusted somewhat to reflect the new data. 
+<b>Edit (6/26/15):</b> In a previous version of this writeup, we have have
+accidentally shown performance measurements using the development build of React rather than the production build. During the re-testing phase, we discovered some discrepancies in our data, and have regenerated all of the performance data with a higher level of confidence that they are consistent. Switching from the development to production build of React also removed the performance degradation from React version 0.12.2 to 0.13.3, so we have removed the older version of React from our comparisons. The discussion beneath the performance data has been adjusted somewhat to reflect the new data. 
 </p>
 
 </body>
