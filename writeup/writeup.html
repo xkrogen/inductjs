@@ -100,176 +100,143 @@
 
 <table>
 <tr><th colspan="9">Rendering time (in milliseconds) for a nested array of 300 rows, each containing 15 elements</th></tr>
-<tr><th rowspan="2">Scenario</th><th colspan="2">InductJS</th><th colspan="2">AngularJS 1.4.0-rc.2</th><th colspan="2">React 0.12.2</th><th colspan="2">React 0.13.3</th></tr>
+<tr><th rowspan="2">Scenario</th><th colspan="2">InductJS</th><th colspan="2">AngularJS 1.4.0-rc.2</th><th colspan="2">React 0.13.3</th></tr>
 <tr>
     <th><a href="http://rawgit.com/xkrogen/inductjs/master/examples/changing-list-nested/induct.html">Text Only</a></th><th><a href="http://rawgit.com/xkrogen/inductjs/master/examples/changing-list-nested/induct-html.html">HTML Content</a></th>
     <th><a href="http://rawgit.com/xkrogen/inductjs/master/examples/changing-list-nested/angular.html">Text Only</a></th><th><a href="http://rawgit.com/xkrogen/inductjs/master/examples/changing-list-nested/angular-html.html">HTML Content</a></th>
-    <th><a href="http://rawgit.com/xkrogen/inductjs/master/examples/changing-list-nested/react-old.html">Text Only</a></th><th><a href="http://rawgit.com/xkrogen/inductjs/master/examples/changing-list-nested/react-old-html.html">HTML Content</a></th>
-    <th><a href="http://rawgit.com/xkrogen/inductjs/master/examples/changing-list-nested/react.html">Text Only</a></th><th><a href="http://rawgit.com/xkrogen/inductjs/master/examples/changing-list-nested/react-old-html.html">HTML Content</a></th>
+    <th><a href="http://rawgit.com/xkrogen/inductjs/master/examples/changing-list-nested/react.html">Text Only</a></th><th><a href="http://rawgit.com/xkrogen/inductjs/master/examples/changing-list-nested/react-html.html">HTML Content</a></th>
   </tr>
 <tr><td class="head"><b>Initial Rendering</b></td>
-<td class="table-val">222</td>
-<td class="table-val">231</td>
+<td class="table-val">82</td>
+<td class="table-val">81</td>
 <td class="table-val">*</td>
 <td class="table-val">*</td>
-<td class="table-val fastest">106</td>
-<td class="table-val fastest">130</td>
-<td class="table-val">340</td>
-<td class="table-val">330</td>
+<td class="table-val">92</td>
+<td class="table-val">100</td>
 </tr>
 <tr><td class="head"><b>Rerender With No Changes</b></td>
-<td class="table-val">26</td>
-<td class="table-val">28</td>
+<td class="table-val">6.5</td>
+<td class="table-val">6.5</td>
 <td class="table-val fastest">2</td>
 <td class="table-val fastest">2</td>
-<td class="table-val">21</td>
-<td class="table-val">32</td>
-<td class="table-val slowest">121</td>
-<td class="table-val slowest">124</td>
+<td class="table-val slowest">18</td>
+<td class="table-val slowest">27</td>
 </tr>
 <tr><td class="head"><b>Change All Rows:</b>
 all row arrays are replaced</td>
-<td class="table-val fastest">59</td>
-<td class="table-val">775</td>
-<td class="table-val slowest">1572</td>
-<td class="table-val slowest">962</td>
-<td class="table-val">195</td>
-<td class="table-val">373</td>
-<td class="table-val">297</td>
-<td class="table-val">555</td>
+<td class="table-val fastest">14</td>
+<td class="table-val">55</td>
+<td class="table-val slowest">243</td>
+<td class="table-val slowest">293</td>
+<td class="table-val">41</td>
+<td class="table-val">83</td>
 </tr>
 <tr><td class="head"><b>Change All Elements:</b>
 all elements are replaced</td>
-<td class="table-val fastest">53</td>
-<td class="table-val">779</td>
-<td class="table-val slowest">1701</td>
-<td class="table-val slowest">1002</td>
-<td class="table-val">202</td>
-<td class="table-val">396</td>
-<td class="table-val">324</td>
-<td class="table-val">575</td>
+<td class="table-val fastest">14</td>
+<td class="table-val">54</td>
+<td class="table-val slowest">285</td>
+<td class="table-val slowest">339</td>
+<td class="table-val">37</td>
+<td class="table-val">82</td>
 </tr>
 <tr><td class="head"><b>Change 75% of Rows:</b>
 random selection of 75% of rows are replaced</td>
-<td class="table-val fastest">50</td>
-<td class="table-val slowest">598</td>
-<td class="table-val slowest">536</td>
-<td class="table-val slowest">788</td>
-<td class="table-val">164</td>
-<td class="table-val">312</td>
-<td class="table-val">276</td>
-<td class="table-val">480</td>
+<td class="table-val fastest">12</td>
+<td class="table-val">44</td>
+<td class="table-val slowest">190</td>
+<td class="table-val slowest">230</td>
+<td class="table-val">34</td>
+<td class="table-val">70</td>
 </tr>
 <tr><td class="head"><b>Change 75% of Elements:</b>
 random selection of 75% of elements are replaced</td>
-<td class="table-val fastest">54</td>
-<td class="table-val slowest">598</td>
-<td class="table-val slowest">576</td>
-<td class="table-val slowest">754</td>
-<td class="table-val">166</td>
-<td class="table-val">317</td>
-<td class="table-val">276</td>
-<td class="table-val">481</td>
+<td class="table-val fastest">12</td>
+<td class="table-val">43</td>
+<td class="table-val slowest">235</td>
+<td class="table-val slowest">279</td>
+<td class="table-val">33</td>
+<td class="table-val">69</td>
 </tr>
 <tr><td class="head"><b>Change 50% of Rows</b></td>
-<td class="table-val fastest">51</td>
-<td class="table-val">416</td>
-<td class="table-val">363</td>
-<td class="table-val">506</td>
-<td class="table-val">119</td>
-<td class="table-val">223</td>
-<td class="table-val">239</td>
-<td class="table-val">370</td>
+<td class="table-val fastest">11</td>
+<td class="table-val">32</td>
+<td class="table-val slowest">130</td>
+<td class="table-val slowest">156</td>
+<td class="table-val">30</td>
+<td class="table-val">56</td>
 </tr>
 <tr><td class="head"><b>Change 50% of Elements</b></td>
-<td class="table-val fastest">50</td>
-<td class="table-val">438</td>
-<td class="table-val">432</td>
-<td class="table-val">562</td>
-<td class="table-val">125</td>
-<td class="table-val">227</td>
-<td class="table-val">232</td>
-<td class="table-val">378</td>
+<td class="table-val fastest">11</td>
+<td class="table-val">32</td>
+<td class="table-val slowest">188</td>
+<td class="table-val slowest">224</td>
+<td class="table-val">29</td>
+<td class="table-val">58</td>
 </tr>
 <tr><td class="head"><b>Change 25% of Rows</b></td>
-<td class="table-val fastest">48</td>
-<td class="table-val">224</td>
-<td class="table-val">188</td>
-<td class="table-val">259</td>
-<td class="table-val fastest">75</td>
-<td class="table-val">135</td>
-<td class="table-val">182</td>
-<td class="table-val">245</td>
+<td class="table-val fastest">8</td>
+<td class="table-val">20</td>
+<td class="table-val slowest">69</td>
+<td class="table-val slowest">84</td>
+<td class="table-val">27</td>
+<td class="table-val">42</td>
 </tr>
 <tr><td class="head"><b>Change 25% of Elements</b></td>
-<td class="table-val fastest">63</td>
-<td class="table-val">251</td>
-<td class="table-val">256</td>
-<td class="table-val">337</td>
-<td class="table-val fastest">78</td>
-<td class="table-val">140</td>
-<td class="table-val">186</td>
-<td class="table-val">256</td>
+<td class="table-val fastest">8</td>
+<td class="table-val">21</td>
+<td class="table-val slowest">133</td>
+<td class="table-val slowest">154</td>
+<td class="table-val">24</td>
+<td class="table-val">45</td>
 </tr>
 <tr><td class="head"><b>Insert 30 Rows at Start</b></td>
-<td class="table-val">59</td>
-<td class="table-val">63</td>
-<td class="table-val">82</td>
-<td class="table-val">111</td>
-<td class="table-val">57</td>
-<td class="table-val">89</td>
-<td class="table-val slowest">163</td>
-<td class="table-val slowest">211</td>
+<td class="table-val fastest">8</td>
+<td class="table-val">17</td>
+<td class="table-val">33</td>
+<td class="table-val">39</td>
+<td class="table-val">26</td>
+<td class="table-val">40</td>
 </tr>
 <tr><td class="head"><b>Delete 30 Rows from Start</b></td>
-<td class="table-val">28</td>
-<td class="table-val">31</td>
+<td class="table-val">7</td>
+<td class="table-val">9</td>
 <td class="table-val fastest">2</td>
 <td class="table-val fastest">2</td>
-<td class="table-val">28</td>
-<td class="table-val">42</td>
-<td class="table-val slowest">123</td>
-<td class="table-val slowest">131</td>
+<td class="table-val slowest">20</td>
+<td class="table-val slowest">30</td>
 </tr>
 <tr><td class="head"><b>Insert 30 Rows at End</b></td>
-<td class="table-val">59</td>
-<td class="table-val">61</td>
-<td class="table-val">82</td>
-<td class="table-val">111</td>
-<td class="table-val">44</td>
-<td class="table-val">73</td>
-<td class="table-val slowest">154</td>
-<td class="table-val slowest">191</td>
+<td class="table-val fastest">8</td>
+<td class="table-val fastest">13</td>
+<td class="table-val">33</td>
+<td class="table-val">40</td>
+<td class="table-val">24</td>
+<td class="table-val">36</td>
 </tr>
 <tr><td class="head"><b>Delete 30 Rows from End</b></td>
-<td class="table-val">29</td>
-<td class="table-val">28</td>
-<td class="table-val fastest">3</td>
-<td class="table-val fastest">3</td>
-<td class="table-val">25</td>
-<td class="table-val">35</td>
-<td class="table-val slowest">121</td>
-<td class="table-val slowest">123</td>
+<td class="table-val">6</td>
+<td class="table-val">6</td>
+<td class="table-val fastest">2</td>
+<td class="table-val fastest">2</td>
+<td class="table-val slowest">20</td>
+<td class="table-val slowest">29</td>
 </tr>
 <tr><td class="head"><b>Insert Row in Middle</b></td>
-<td class="table-val">27</td>
-<td class="table-val">39</td>
-<td class="table-val fastest">9</td>
-<td class="table-val fastest">10</td>
-<td class="table-val">26</td>
-<td class="table-val">38</td>
-<td class="table-val slowest">121</td>
-<td class="table-val slowest">128</td>
+<td class="table-val fastest">7</td>
+<td class="table-val fastest">8</td>
+<td class="table-val fastest">6</td>
+<td class="table-val fastest">6</td>
+<td class="table-val slowest">19</td>
+<td class="table-val slowest">29</td>
 </tr>
 <tr><td class="head"><b>Change Row in Middle</b></td>
-<td class="table-val">28</td>
-<td class="table-val">34</td>
-<td class="table-val fastest">10</td>
-<td class="table-val fastest">10</td>
-<td class="table-val">24</td>
-<td class="table-val">32</td>
-<td class="table-val slowest">121</td>
-<td class="table-val slowest">124</td>
+<td class="table-val fastest">7</td>
+<td class="table-val fastest">6</td>
+<td class="table-val fastest">6</td>
+<td class="table-val fastest">7</td>
+<td class="table-val slowest">19</td>
+<td class="table-val slowest">28</td>
 </tr>
 </table>
 <p>A few interesting things to notice:</p>
@@ -277,10 +244,10 @@ random selection of 75% of elements are replaced</td>
 <ul>
 <li>We have not found a good way to obtain measurements for AngularJS's initial rendering time so we have left those items blank.</li>
 <li>For large changes (i.e. any of the comparisons that change a percent of the elements) using text-only sites, InductJS is far faster than any of the frameworks. This is especially interesting since in InductJS using a text-only site is an optimization, whereas in React and AngularJS it is the default. </li>
-<li>AngularJS has blazing fast times for re-rendering without changes. React 0.12.2 and InductJS perform similarly, and React 0.13.3 lags significantly behind.</li>
-<li>For the operations which do not affect large amounts of the data, the performance is mostly limited by the amount of time it takes to do a full re-check (i.e. a re-render with no changes). For AngularJS and InductJS, deleting rows from either end takes a trivial amount of time. For InductJS (when using text-only) and ReactJS (either template type), inserting or changing a row in the middle takes a trivial amount of time. </li>
-<li>Using template sites which are only capable of text vs HTML-capable has very different effects on different frameworks. Most notably, AngularJS is actually faster when using HTML sites for a full refresh, and only around 20% slower for other large operations. React has a bit larger discrepancy, taking up to nearly twice as long on some large operations for HTML sites. InductJS has the largest difference, with HTML sites taking over 10x as long on large operations!</li>
-<li>For large changes using HTML sites, InductJS outperforms AngularJS by a fair margin, but React is able to outperform InductJS (especially 0.12.2). This may indicate that there is more room for improvement in InductJS.</li>
+<li>AngularJS has blazing fast times for re-rendering without changes. InductJS almost manages to keep up, and React lags behind a bit. </li>
+<li>For the operations which do not affect large amounts of the data, the performance is mostly limited by the amount of time it takes to do a full re-check (i.e. a re-render with no changes). For all three frameworks, deleting rows from either end takes a trivial amount of additional time, and InductJS/ReactJS both take a trivial amount of extra time to insert or change a row in the middle.</li>
+<li>Using template sites which are only capable of text vs HTML-capable has very different effects on different frameworks. AngularJS has the smallest difference, with around a 25% speed decrease when forcing it to display arbitrary HTML strings. React takes around twice as long on some large operations, and InductJS has the largest difference, with HTML sites taking nearly 4 times as long in some cases. </li>
+<li>InductJS and React both far outperform AngularJS for large changes, and InductJS's text optimizations are able to give it a significant edge over React on text-only sites, though this gap closes somewhat when both frameworks are asked to display arbitrary HTML strings. This may be somewhat of an unfair comparison, as in React (and AngularJS) displaying an arbitrary HTML string is nonstandard and likely not optimized. </li>
 </ul>
 
 <h2 id="usage">InductJS Usage</h2>
@@ -359,6 +326,10 @@ For our example template, if we render it in the context:
 <p>"For" template optimizations are disabled by default, but can be enabled on a per-template basis by using "for*" instead of "for" as the template type (e.g., <span class="code">{{for*(row) context.rows}}</span>). Currently the optimizations employed on "for" templates are somewhat limited, and are optimized for insertion and deletion at either end of the array. We traverse both the new and previous arrays from each end, attempting to find a "match" between the two (defined as 5 or more elements in a row that are equal between the new and previous arrays). If a match is found from both ends, items are then deleted and added outside of the match area as necessary, then the area between the two matches is updated incrementally. This allows us to attempt to leverage as much of the existing content as possible. If no match is found, we still attempt to leverage existing content by performing incremental rerendering on the existing items. </p>
 
 <p>Note that each element of the array used in an optimized "for" template <b>must</b> be unique. You cannot have duplicate strings / numeric values and you cannot use the same object reference twice. This is a limitation due to the way the optimizations are implemented - the current location of an item within the list is tracked using a hash table mapping items to their indices, similar to what is used by React and AngularJS. Allowing a separate array of keys to be used to track elements, similar to what is <a href="https://facebook.github.io/react/docs/multiple-components.html#dynamic-children">required by React</a> and <a href="https://docs.angularjs.org/api/ng/directive/ngRepeat#tracking-and-duplicates">available in AngularJS</a>, may be implemented in the future.</p>
+
+<p>
+<b>Edit (6/26/15):</b> We were informed that we accidentally ran our performance measurements on the development build of React rather than the production build. During the re-testing phase, we discovered some discrepancies in our data, and have regenerated all of the performance data with a higher level of confidence that they are consistent. Switching from the development to production build of React also removed the performance degredation from React version 0.12.2 to 0.13.3, so we have removed the older version of React from our comparisons. The discussion beneath the performance data has been adjusted somewhat to reflect the new data. 
+</p>
 
 </body>
 
